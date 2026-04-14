@@ -1,0 +1,176 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Students</h2>
+    <button class="btn btn-primary" (click)="openForm()">
+      <i class="bi bi-plus-circle"></i> Add Student
+    </button>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>CIN</th>
+              <th>School</th>
+              <th>Birth Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of etudiants">
+              <td>{{ item.idEtudiant }}</td>
+              <td>{{ item.prenomEt }}</td>
+              <td>{{ item.nomEt }}</td>
+              <td><span class="badge bg-secondary">{{ item.cin }}</span></td>
+              <td>{{ item.ecole }}</td>
+              <td>{{ item.dateNaissance }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-info me-2" (click)="viewDetails(item.idEtudiant!)" title="View Details">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-primary me-2" (click)="edit(item)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="delete(item.idEtudiant!)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editMode ? 'Edit' : 'Add' }} Student</h5>
+          <button type="button" class="btn-close" (click)="closeForm()"></button>
+        </div>
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">First Name</label>
+              <input type="text" class="form-control" formControlName="prenomEt">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Last Name</label>
+              <input type="text" class="form-control" formControlName="nomEt">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">CIN</label>
+              <input type="number" class="form-control" formControlName="cin">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">School</label>
+              <input type="text" class="form-control" formControlName="ecole">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Birth Date</label>
+              <input type="date" class="form-control" formControlName="dateNaissance">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="form.invalid">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="showModal" *ngIf="showModal"></div>
+
+  <!-- View Student Details Modal -->
+  <div class="modal fade" [class.show]="showViewModal" [style.display]="showViewModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">
+            <i class="bi bi-person-circle"></i> Student Details
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeViewModal()"></button>
+        </div>
+        <div class="modal-body" *ngIf="selectedStudent">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <h6 class="text-muted mb-2">
+                    <i class="bi bi-hash"></i> Student ID
+                  </h6>
+                  <p class="h5 mb-0">{{ selectedStudent.idEtudiant }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <h6 class="text-muted mb-2">
+                    <i class="bi bi-credit-card"></i> CIN
+                  </h6>
+                  <p class="h5 mb-0">
+                    <span class="badge bg-secondary fs-6">{{ selectedStudent.cin }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <h6 class="text-muted mb-2">
+                    <i class="bi bi-person"></i> First Name
+                  </h6>
+                  <p class="h5 mb-0">{{ selectedStudent.prenomEt }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <h6 class="text-muted mb-2">
+                    <i class="bi bi-person-fill"></i> Last Name
+                  </h6>
+                  <p class="h5 mb-0">{{ selectedStudent.nomEt }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <h6 class="text-muted mb-2">
+                    <i class="bi bi-building"></i> School
+                  </h6>
+                  <p class="h5 mb-0">{{ selectedStudent.ecole }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <h6 class="text-muted mb-2">
+                    <i class="bi bi-calendar-event"></i> Date of Birth
+                  </h6>
+                  <p class="h5 mb-0">{{ selectedStudent.dateNaissance }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeViewModal()">Close</button>
+          <button type="button" class="btn btn-primary" (click)="closeViewModal(); edit(selectedStudent!)">
+            <i class="bi bi-pencil"></i> Edit Student
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="showViewModal" *ngIf="showViewModal"></div>
+</div>

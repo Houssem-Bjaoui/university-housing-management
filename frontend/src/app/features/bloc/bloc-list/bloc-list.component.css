@@ -1,0 +1,8 @@
+.modal.show {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}

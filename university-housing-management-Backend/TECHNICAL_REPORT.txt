@@ -1,0 +1,655 @@
+================================================================================
+         TECHNICAL REPORT - University Housing Management Backend
+================================================================================
+Generated : April 13, 2026
+Project   : housing-management
+GroupId   : com.houssem
+ArtifactId: housing-management
+Version   : 0.0.1-SNAPSHOT
+Author    : Houssem
+================================================================================
+
+
+================================================================================
+1. TECHNOLOGY STACK
+================================================================================
+
+  Framework      : Spring Boot 4.0.5
+  Language       : Java 17
+  Build Tool     : Maven (with Maven Wrapper)
+  ORM            : Spring Data JPA / Hibernate
+  Database       : MySQL (via mysql-connector-j)
+  Dialect        : org.hibernate.dialect.MySQLDialect
+  Utilities      : Lombok (code generation)
+  Web Layer      : Spring MVC (spring-boot-starter-webmvc)
+  Testing        : spring-boot-starter-data-jpa-test, spring-boot-starter-webmvc-test
+
+            
+================================================================================
+2. DATABASE CONFIGURATION  (application.yaml)
+================================================================================
+
+  URL            : jdbc:mysql://localhost:3306/gestion_foyer
+  Options        : createDatabaseIfNotExist=true, useSSL=false, serverTimezone=UTC
+  Username       : root
+  Password       : (empty / not set)
+  DDL Auto       : update  (Hibernate auto-updates schema on startup)
+  Show SQL       : false
+  Format SQL     : true
+
+
+================================================================================
+3. PROJECT STRUCTURE / FILE SYSTEM
+================================================================================
+
+university-housing-management-Backend/
+├── pom.xml
+├── mvnw / mvnw.cmd                          (Maven wrapper scripts)
+├── .mvn/wrapper/maven-wrapper.properties
+└── src/
+    ├── main/
+    │   ├── resources/
+    │   │   └── application.yaml             (DB + JPA config)
+    │   └── java/com/houssem/housing_management/
+    │       ├── HousingManagementApplication.java   (Entry point)
+    │       ├── Enum/
+    │       │   └── TypeChambre.java
+    │       ├── Entities/                    (JPA Entities)
+    │       │   ├── Universite.java
+    │       │   ├── Foyer.java
+    │       │   ├── Bloc.java
+    │       │   ├── Chambre.java
+    │       │   ├── Etudiant.java
+    │       │   └── Reservation.java
+    │       ├── DTOs/                        (Data Transfer Objects)
+    │       │   ├── UniversiteDTO.java
+    │       │   ├── FoyerDTO.java
+    │       │   ├── BlocDTO.java
+    │       │   ├── ChambreDTO.java
+    │       │   ├── EtudiantDTO.java
+    │       │   └── ReservationDTO.java
+    │       ├── mapper/
+    │       │   └── EntityDtoMapper.java     (Manual mapper, static methods)
+    │       ├── Repositories/                (Spring Data JPA interfaces)
+    │       │   ├── UniversiteRepository.java
+    │       │   ├── FoyerRepository.java
+    │       │   ├── BlocRepository.java
+    │       │   ├── ChambreRepository.java
+    │       │   ├── EtudiantRepository.java
+    │       │   └── ReservationRepository.java
+    │       ├── ServiceImpl/                 (Service Interfaces)
+    │       │   ├── IUniversiteService.java
+    │       │   ├── IFoyerService.java
+    │       │   ├── IBlocService.java
+    │       │   ├── IChambreService.java
+    │       │   ├── IEtudiantService.java
+    │       │   └── IReservationService.java
+    │       ├── Services/                    (Service Implementations)
+    │       │   ├── UniversiteServiceImpl.java
+    │       │   ├── FoyerServiceImpl.java
+    │       │   ├── BlocServiceImpl.java
+    │       │   ├── ChambreServiceImpl.java
+    │       │   ├── EtudiantServiceImpl.java
+    │       │   └── ReservationServiceImpl.java
+    │       └── Controller/                  (REST Controllers)
+    │           ├── UniversiteController.java
+    │           ├── FoyerController.java
+    │           ├── BlocController.java
+    │           ├── chambreController.java   (NOTE: lowercase class name - naming inconsistency)
+    │           ├── EtudiantController.java
+    │           └── ReservationController.java
+    └── test/
+        └── java/com/houssem/housing_management/
+            └── HousingManagementApplicationTests.java
+
+
+================================================================================
+4. ARCHITECTURE OVERVIEW
+================================================================================
+
+  The project follows a classic layered (N-Tier) Spring Boot architecture:
+
+  [HTTP Client]
+       |
+  [Controller Layer]   -- REST endpoints, receives/returns DTOs
+       |
+  [Service Layer]      -- Business logic, @Transactional operations
+       |
+  [Repository Layer]   -- Spring Data JPA, DB access
+       |
+  [Entity Layer]       -- JPA-mapped domain objects
+       |
+  [MySQL Database]
+
+  Mapping between Entities and DTOs is handled by a single static utility class:
+  EntityDtoMapper (manual mapping, no MapStruct or ModelMapper used).
+
+  NOTE: The "ServiceImpl" folder contains interfaces (named I*Service),
+        and the "Services" folder contains the actual implementations (*ServiceImpl).
+        This naming is inverted from the conventional Spring naming convention.
+
+
+================================================================================
+5. DOMAIN MODEL & ENTITY RELATIONSHIPS
+================================================================================
+
+  Universite
+    - idUniversite (PK, auto-generated Long)
+    - nomUniversite (String)
+    - adresse (String)
+    - foyer (OneToOne -> Foyer, CascadeType.ALL, EAGER)
+      => Universite is the owning side of the OneToOne
+
+  Foyer
+    - idFoyer (PK, auto-generated Long)
+    - nomFoyer (String)
+    - capaciteFoyer (Long)
+    - universite (OneToOne, mappedBy="foyer" -> inverse side)
+    - blocs (OneToMany -> Bloc, CascadeType.PERSIST, LAZY)
+
+  Bloc
+    - idBloc (PK, auto-generated Long)
+    - nomBloc (String)
+    - capaciteBloc (Long)
+    - foyer (ManyToOne -> Foyer, FK: foyer_id)
+    - chambres (OneToMany -> Chambre, CascadeType.ALL, LAZY)
+
+  Chambre
+    - idChambre (PK, auto-generated Long)
+    - numeroChambre (Long)
+    - typeC (Enum: TypeChambre -> SIMPLE | DOUBLE | TRIPLE)
+    - bloc (ManyToOne -> Bloc, FK: bloc_id)
+    - reservations (OneToMany -> Reservation, CascadeType.PERSIST, LAZY)
+
+  Etudiant
+    - idEtudiant (PK, auto-generated Long)
+    - nomEt (String)
+    - prenomEt (String)
+    - cin (Long)  -- national ID number
+    - ecole (String)
+    - dateNaissance (LocalDate)
+    - reservations (OneToMany -> Reservation, CascadeType.PERSIST, LAZY)
+
+  Reservation
+    - idReservation (PK, String, manually generated)
+      Format: "YYYY/YYYY-<nomBloc>-<numeroChambre>-<cin>"
+      Example: "2025/2026-BlocA-101-12345678"
+    - anneeUniversitaireDebut (LocalDate)
+    - anneeUniversitaireFin (LocalDate)
+    - dateReservation (LocalDate)
+    - estValide (Boolean)
+    - chambre (ManyToOne -> Chambre, FK: chambre_id)
+    - etudiant (ManyToOne -> Etudiant, FK: etudiant_id)
+
+  Enum: TypeChambre
+    - SIMPLE  (capacity: 1)
+    - DOUBLE  (capacity: 2)
+    - TRIPLE  (capacity: 3)
+
+  Relationship Summary:
+    Universite  1 <---> 1  Foyer
+    Foyer       1 <---> N  Bloc
+    Bloc        1 <---> N  Chambre
+    Chambre     1 <---> N  Reservation
+    Etudiant    1 <---> N  Reservation
+
+
+================================================================================
+6. REPOSITORIES
+================================================================================
+
+  All repositories extend JpaRepository (provides standard CRUD + pagination).
+
+  BlocRepository          extends JpaRepository<Bloc, Long>
+    - findByNomBloc(String nomBloc) : Bloc
+
+  ChambreRepository       extends JpaRepository<Chambre, Long>
+    - findByNumeroChambre(Long numeroChambre) : Chambre
+    - findByBlocNomBloc(String nomBloc) : List<Chambre>
+    - countByTypeCAndBlocIdBloc(TypeChambre type, Long idBloc) : long
+
+  EtudiantRepository      extends JpaRepository<Etudiant, Long>
+    - findByCin(Long cin) : Etudiant
+
+  FoyerRepository         extends JpaRepository<Foyer, Long>
+    - findByNomFoyer(String nomFoyer) : Foyer
+
+  ReservationRepository   extends JpaRepository<Reservation, String>
+    - findByEtudiantCinAndEstValideTrue(Long cin) : Reservation
+    - findByChambreIdChambreAndEstValideTrue(Long idChambre) : List<Reservation>
+
+  UniversiteRepository    extends JpaRepository<Universite, Long>
+    - findByNomUniversite(String nomUniversite) : Universite
+
+
+================================================================================
+7. SERVICE INTERFACES  (package: ServiceImpl)
+================================================================================
+
+  IBlocService
+    - addBloc(BlocDTO) : BlocDTO
+    - updateBloc(BlocDTO) : BlocDTO
+    - deleteBloc(Long id) : void
+    - getBlocById(Long id) : BlocDTO
+    - getAllBlocs() : List<BlocDTO>
+    - affecterChambresABloc(List<Long> numChambres, String nomBloc) : BlocDTO
+    - affecterBlocAFoyer(String nomBloc, String nomFoyer) : BlocDTO
+
+  IChambreService
+    - addChambre(ChambreDTO) : ChambreDTO
+    - updateChambre(ChambreDTO) : ChambreDTO
+    - deleteChambre(Long id) : void
+    - getChambreById(Long id) : ChambreDTO
+    - getAllChambres() : List<ChambreDTO>
+    - getChambresParNomBloc(String nomBloc) : List<ChambreDTO>
+    - nbChambreParTypeEtBloc(TypeChambre type, long idBloc) : long
+
+  IEtudiantService
+    - addEtudiant(EtudiantDTO) : EtudiantDTO
+    - updateEtudiant(EtudiantDTO) : EtudiantDTO
+    - deleteEtudiant(Long id) : void
+    - getEtudiantById(Long id) : EtudiantDTO
+    - getAllEtudiants() : List<EtudiantDTO>
+    - getEtudiantByCin(Long cin) : EtudiantDTO
+
+  IFoyerService
+    - addFoyer(FoyerDTO) : FoyerDTO
+    - updateFoyer(FoyerDTO) : FoyerDTO
+    - deleteFoyer(Long id) : void
+    - getFoyerById(Long id) : FoyerDTO
+    - getAllFoyers() : List<FoyerDTO>
+    - ajouterFoyerEtAffecterAUniversite(FoyerDTO, long idUniversite) : FoyerDTO
+
+  IReservationService
+    - ajouterReservationEtAssignerAChambreEtAEtudiant(Long numChambre, Long cin) : ReservationDTO
+    - annulerReservation(Long cinEtudiant) : ReservationDTO
+    - getAllReservations() : List<ReservationDTO>
+    - getReservationById(String id) : ReservationDTO
+
+  IUniversiteService
+    - addOrUpdateUniversite(UniversiteDTO) : UniversiteDTO
+    - deleteUniversite(Long id) : void
+    - getUniversiteById(Long id) : UniversiteDTO
+    - getAllUniversites() : List<UniversiteDTO>
+    - affecterFoyerAUniversite(long idFoyer, String nomUniversite) : UniversiteDTO
+    - desaffecterFoyerAUniversite(long idUniversite) : UniversiteDTO
+
+
+================================================================================
+8. SERVICE IMPLEMENTATIONS  (package: Services)
+================================================================================
+
+  BlocServiceImpl  implements IBlocService
+    Dependencies: BlocRepository, ChambreRepository, FoyerRepository
+    - addBloc            : maps DTO -> Entity, saves, returns DTO
+    - updateBloc         : maps DTO -> Entity, saves (upsert), returns DTO
+    - deleteBloc         : deleteById
+    - getBlocById        : findById, maps to DTO
+    - getAllBlocs         : findAll, stream map to DTO
+    - affecterChambresABloc : finds Bloc by name, finds each Chambre by number,
+                              sets bloc reference on each chambre, saves all
+    - affecterBlocAFoyer    : finds Bloc and Foyer by name, sets foyer on bloc, saves
+
+  ChambreServiceImpl  implements IChambreService
+    Dependencies: ChambreRepository, BlocRepository
+    - addChambre         : maps DTO -> Entity, saves, returns DTO
+    - updateChambre      : maps DTO -> Entity, saves, returns DTO
+    - deleteChambre      : deleteById
+    - getChambreById     : findById, maps to DTO
+    - getAllChambres      : findAll, stream map to DTO
+    - getChambresParNomBloc : validates bloc exists, queries by bloc name
+    - nbChambreParTypeEtBloc: validates bloc exists, counts by type and bloc ID
+
+  EtudiantServiceImpl  implements IEtudiantService
+    Dependencies: EtudiantRepository
+    - addEtudiant        : maps DTO -> Entity, saves, returns DTO
+    - updateEtudiant     : maps DTO -> Entity, saves, returns DTO
+    - deleteEtudiant     : deleteById
+    - getEtudiantById    : findById, maps to DTO
+    - getAllEtudiants     : findAll, stream map to DTO
+    - getEtudiantByCin   : findByCin, maps to DTO
+
+  FoyerServiceImpl  implements IFoyerService
+    Dependencies: FoyerRepository, UniversiteRepository
+    - addFoyer           : maps DTO -> Entity, saves, returns DTO
+    - updateFoyer        : maps DTO -> Entity, saves, returns DTO
+    - deleteFoyer        : deleteById
+    - getFoyerById       : findById, maps to DTO
+    - getAllFoyers        : findAll, stream map to DTO
+    - ajouterFoyerEtAffecterAUniversite :
+        * Finds Universite by ID, throws if not found
+        * Throws if Universite already has a Foyer
+        * Creates Foyer, sets bidirectional link, saves both
+
+  ReservationServiceImpl  implements IReservationService
+    Dependencies: ReservationRepository, ChambreRepository, EtudiantRepository
+    - ajouterReservationEtAssignerAChambreEtAEtudiant :
+        * Finds Chambre by numeroChambre, Etudiant by CIN
+        * Checks room capacity (SIMPLE=1, DOUBLE=2, TRIPLE=3)
+        * Dynamically computes academic year based on current date
+          (before July -> current year-1/year, after July -> year/year+1)
+        * Generates composite ID: "YYYY/YYYY-<nomBloc>-<numChambre>-<cin>"
+        * Saves and returns Reservation DTO
+    - annulerReservation :
+        * Finds active reservation by student CIN (estValide=true)
+        * Deletes the reservation, returns its DTO
+    - getAllReservations  : findAll, stream map to DTO
+    - getReservationById : findById, maps to DTO
+
+  UniversiteServiceImpl  implements IUniversiteService
+    Dependencies: UniversiteRepository, FoyerRepository
+    - addOrUpdateUniversite : maps DTO -> Entity, saves (upsert), returns DTO
+    - deleteUniversite      : deleteById
+    - getUniversiteById     : findById, maps to DTO
+    - getAllUniversites      : findAll, stream map to DTO
+    - affecterFoyerAUniversite :
+        * Finds Foyer by ID, Universite by name
+        * Throws if Universite already has a Foyer
+        * Sets bidirectional link, saves Universite
+    - desaffecterFoyerAUniversite :
+        * Finds Universite by ID
+        * Nullifies bidirectional Foyer link, saves both
+
+
+================================================================================
+9. REST API ENDPOINTS
+================================================================================
+
+  BASE URL: http://localhost:8080  (default Spring Boot port)
+
+  -----------------------------------------------------------------------
+  BLOC CONTROLLER  -  Base path: /bloc
+  -----------------------------------------------------------------------
+  POST   /bloc/add
+    Body   : BlocDTO { idBloc, nomBloc, capaciteBloc, chambres[] }
+    Returns: BlocDTO
+    Desc   : Create a new Bloc
+
+  PUT    /bloc/update
+    Body   : BlocDTO
+    Returns: BlocDTO
+    Desc   : Update an existing Bloc
+
+  DELETE /bloc/{id}
+    Path   : id (Long)
+    Returns: void
+    Desc   : Delete Bloc by ID
+
+  GET    /bloc/{id}
+    Path   : id (Long)
+    Returns: BlocDTO
+    Desc   : Get Bloc by ID
+
+  GET    /bloc/all
+    Returns: List<BlocDTO>
+    Desc   : Get all Blocs
+
+  PUT    /bloc/affecterChambres/{nomBloc}
+    Path   : nomBloc (String)
+    Body   : List<Long> (list of numeroChambre values)
+    Returns: BlocDTO
+    Desc   : Assign multiple Chambres to a Bloc by room numbers
+
+  PUT    /bloc/affecterBlocAFoyer/{nomBloc}/{nomFoyer}
+    Path   : nomBloc (String), nomFoyer (String)
+    Returns: BlocDTO
+    Desc   : Assign a Bloc to a Foyer by their names
+
+  -----------------------------------------------------------------------
+  CHAMBRE CONTROLLER  -  Base path: /chambre
+  -----------------------------------------------------------------------
+  POST   /chambre/add
+    Body   : ChambreDTO { idChambre, numeroChambre, typeC }
+    Returns: ChambreDTO
+    Desc   : Create a new Chambre
+
+  PUT    /chambre/update
+    Body   : ChambreDTO
+    Returns: ChambreDTO
+    Desc   : Update an existing Chambre
+
+  DELETE /chambre/delete/{id}
+    Path   : id (Long)
+    Returns: void
+    Desc   : Delete Chambre by ID
+
+  GET    /chambre/{id}
+    Path   : id (Long)
+    Returns: ChambreDTO
+    Desc   : Get Chambre by ID
+
+  GET    /chambre/all
+    Returns: List<ChambreDTO>
+    Desc   : Get all Chambres
+
+  GET    /chambre/byBloc/{nomBloc}
+    Path   : nomBloc (String)
+    Returns: List<ChambreDTO>
+    Desc   : Get all Chambres belonging to a Bloc by bloc name
+
+  GET    /chambre/countByTypeAndBloc?type={type}&idBloc={idBloc}
+    Params : type (TypeChambre: SIMPLE|DOUBLE|TRIPLE), idBloc (long)
+    Returns: long
+    Desc   : Count Chambres by type within a specific Bloc
+
+  -----------------------------------------------------------------------
+  ETUDIANT CONTROLLER  -  Base path: /etudiant
+  -----------------------------------------------------------------------
+  POST   /etudiant/add
+    Body   : EtudiantDTO { idEtudiant, nomEt, prenomEt, cin, ecole, dateNaissance }
+    Returns: EtudiantDTO
+    Desc   : Create a new Etudiant
+
+  PUT    /etudiant/update
+    Body   : EtudiantDTO
+    Returns: EtudiantDTO
+    Desc   : Update an existing Etudiant
+
+  DELETE /etudiant/{id}
+    Path   : id (Long)
+    Returns: void
+    Desc   : Delete Etudiant by ID
+
+  GET    /etudiant/{id}
+    Path   : id (Long)
+    Returns: EtudiantDTO
+    Desc   : Get Etudiant by ID
+
+  GET    /etudiant/all
+    Returns: List<EtudiantDTO>
+    Desc   : Get all Etudiants
+
+  GET    /etudiant/byCin/{cin}
+    Path   : cin (Long)
+    Returns: EtudiantDTO
+    Desc   : Get Etudiant by CIN (national ID)
+
+  -----------------------------------------------------------------------
+  FOYER CONTROLLER  -  Base path: /foyer
+  -----------------------------------------------------------------------
+  POST   /foyer/add
+    Body   : FoyerDTO { idFoyer, nomFoyer, capaciteFoyer, blocs[] }
+    Returns: FoyerDTO
+    Desc   : Create a new Foyer
+
+  PUT    /foyer/update
+    Body   : FoyerDTO
+    Returns: FoyerDTO
+    Desc   : Update an existing Foyer
+
+  DELETE /foyer/{id}
+    Path   : id (Long)
+    Returns: void
+    Desc   : Delete Foyer by ID
+
+  GET    /foyer/{id}
+    Path   : id (Long)
+    Returns: FoyerDTO
+    Desc   : Get Foyer by ID
+
+  GET    /foyer/all
+    Returns: List<FoyerDTO>
+    Desc   : Get all Foyers
+
+  POST   /foyer/ajouterFoyerEtAffecterAUniversite/{idUniversite}
+    Path   : idUniversite (long)
+    Body   : FoyerDTO
+    Returns: FoyerDTO
+    Desc   : Create a Foyer and immediately assign it to a University
+
+  -----------------------------------------------------------------------
+  RESERVATION CONTROLLER  -  Base path: /reservation
+  -----------------------------------------------------------------------
+  POST   /reservation/ajouter?numChambre={numChambre}&cin={cin}
+    Params : numChambre (Long), cin (Long)
+    Returns: ReservationDTO
+    Desc   : Create a reservation for a student in a room.
+             Validates capacity, computes academic year, generates composite ID.
+
+  DELETE /reservation/annuler?cinEtudiant={cinEtudiant}
+    Params : cinEtudiant (Long)
+    Returns: String (confirmation message)
+    Desc   : Cancel the active reservation of a student by CIN
+
+  GET    /reservation/all
+    Returns: List<ReservationDTO>
+    Desc   : Get all Reservations
+
+  GET    /reservation/{id}
+    Path   : id (String) - composite key format
+    Returns: ReservationDTO
+    Desc   : Get Reservation by composite ID
+
+  -----------------------------------------------------------------------
+  UNIVERSITE CONTROLLER  -  Base path: /universite
+  -----------------------------------------------------------------------
+  POST   /universite/addOrUpdate
+    Body   : UniversiteDTO { idUniversite, nomUniversite, adresse, foyer }
+    Returns: UniversiteDTO
+    Desc   : Create or update a University (upsert)
+
+  DELETE /universite/{id}
+    Path   : id (Long)
+    Returns: void
+    Desc   : Delete University by ID
+
+  GET    /universite/{id}
+    Path   : id (Long)
+    Returns: UniversiteDTO
+    Desc   : Get University by ID
+
+  GET    /universite/all
+    Returns: List<UniversiteDTO>
+    Desc   : Get all Universities
+
+  PUT    /universite/affecterFoyer/{idFoyer}/{nomUniversite}
+    Path   : idFoyer (long), nomUniversite (String)
+    Returns: UniversiteDTO
+    Desc   : Assign an existing Foyer to a University by name
+
+  PUT    /universite/desaffecterFoyer/{idUniversite}
+    Path   : idUniversite (long)
+    Returns: UniversiteDTO
+    Desc   : Remove the Foyer assignment from a University
+
+
+================================================================================
+10. MAPPER  (EntityDtoMapper.java)
+================================================================================
+
+  Static utility class with no Spring injection.
+  Provides bidirectional conversion for all 6 domain objects.
+
+  Methods:
+    toDto(Universite)   -> UniversiteDTO   (includes nested FoyerDTO)
+    toEntity(UniversiteDTO) -> Universite
+
+    toDto(Foyer)        -> FoyerDTO        (includes nested List<BlocDTO>)
+    toEntity(FoyerDTO)  -> Foyer
+
+    toDto(Bloc)         -> BlocDTO         (includes nested List<ChambreDTO>)
+    toEntity(BlocDTO)   -> Bloc
+
+    toDto(Chambre)      -> ChambreDTO      (no reservations to avoid circular load)
+    toEntity(ChambreDTO) -> Chambre
+
+    toDto(Etudiant)     -> EtudiantDTO
+    toEntity(EtudiantDTO) -> Etudiant
+
+    toDto(Reservation)  -> ReservationDTO  (includes idChambre, idEtudiant as flat IDs)
+    toEntity(ReservationDTO) -> Reservation (Chambre/Etudiant must be set separately in service)
+
+  Note: Chambre and Reservation associations are intentionally excluded from
+        ChambreDTO and ReservationDTO to prevent circular serialization issues.
+
+
+================================================================================
+11. OBSERVATIONS & NOTES
+================================================================================
+
+  1. NAMING INCONSISTENCY:
+     - The folder "ServiceImpl" contains interfaces (I*Service), while "Services"
+       contains implementations (*ServiceImpl). This is the reverse of the
+       conventional Spring Boot naming convention.
+     - Class "chambreController" starts with a lowercase letter, violating
+       Java naming conventions (should be "ChambreController").
+
+  2. NO SECURITY LAYER:
+     - No Spring Security, JWT, or authentication mechanism is present.
+     - All endpoints are publicly accessible.
+
+  3. NO CORS CONFIGURATION:
+     - No @CrossOrigin or global CORS config found. Cross-origin requests from
+       a frontend may be blocked by the browser.
+
+  4. NO GLOBAL EXCEPTION HANDLER:
+     - No @ControllerAdvice or @RestControllerAdvice for centralized error handling.
+     - RuntimeExceptions thrown in services will result in unformatted 500 responses.
+
+  5. NO PAGINATION:
+     - All "getAll" endpoints return full lists with no pagination or filtering.
+     - Could be a performance concern with large datasets.
+
+  6. NO API DOCUMENTATION:
+     - No Swagger/OpenAPI (springdoc-openapi) dependency configured.
+
+  7. RESERVATION ID GENERATION:
+     - The composite ID logic in ReservationServiceImpl uses string concatenation
+       with year % 100, which may produce incorrect results for years like 2100.
+
+  8. EMPTY PASSWORD IN CONFIG:
+     - application.yaml has an empty MySQL password. This is fine for local dev
+       but must be secured for any other environment.
+
+  9. NO VALIDATION:
+     - No @Valid / @NotNull / @Size annotations on DTOs or controller parameters.
+     - Input is not validated before hitting the service layer.
+
+  10. FOYER <-> UNIVERSITE BIDIRECTIONAL SYNC:
+      - The bidirectional OneToOne between Foyer and Universite requires manual
+        sync in service methods (foyer.setUniversite / universite.setFoyer).
+        This is correctly handled in FoyerServiceImpl and UniversiteServiceImpl.
+
+
+================================================================================
+12. TOTAL FILE COUNT SUMMARY
+================================================================================
+
+  Entities          : 6  (Universite, Foyer, Bloc, Chambre, Etudiant, Reservation)
+  DTOs              : 6  (one per entity)
+  Repositories      : 6  (one per entity)
+  Service Interfaces: 6  (one per entity)
+  Service Impls     : 6  (one per entity)
+  Controllers       : 6  (one per entity)
+  Mapper            : 1  (EntityDtoMapper - static utility)
+  Enum              : 1  (TypeChambre: SIMPLE, DOUBLE, TRIPLE)
+  Config Files      : 1  (application.yaml)
+  Entry Point       : 1  (HousingManagementApplication.java)
+  Test Files        : 1  (HousingManagementApplicationTests.java)
+  Build Files       : 1  (pom.xml)
+  -----------------------------------------------
+  TOTAL SOURCE FILES: 46
+
+================================================================================
+END OF REPORT
+================================================================================

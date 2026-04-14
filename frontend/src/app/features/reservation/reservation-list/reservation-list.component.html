@@ -1,0 +1,103 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Reservations</h2>
+    <button class="btn btn-primary" (click)="openForm()">
+      <i class="bi bi-plus-circle"></i> New Reservation
+    </button>
+  </div>
+
+  <div *ngIf="successMsg" class="alert alert-success alert-dismissible">
+    {{ successMsg }}
+    <button type="button" class="btn-close" (click)="successMsg=''"></button>
+  </div>
+  <div *ngIf="errorMsg" class="alert alert-danger alert-dismissible">
+    {{ errorMsg }}
+    <button type="button" class="btn-close" (click)="errorMsg=''"></button>
+  </div>
+
+  <!-- Cancel Section -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <h6 class="mb-3">Cancel Reservation by Student CIN</h6>
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Student CIN</label>
+          <input type="number" class="form-control" [(ngModel)]="cancelCin" placeholder="Enter CIN">
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-danger" (click)="cancelReservation()" [disabled]="!cancelCin">
+            <i class="bi bi-x-circle"></i> Cancel Reservation
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Date Reserved</th>
+              <th>Valid</th>
+              <th>Chambre ID</th>
+              <th>Student ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of reservations">
+              <td><small>{{ item.idReservation }}</small></td>
+              <td>{{ item.anneeUniversitaireDebut }}</td>
+              <td>{{ item.anneeUniversitaireFin }}</td>
+              <td>{{ item.dateReservation }}</td>
+              <td>
+                <span class="badge" [ngClass]="item.estValide ? 'bg-success' : 'bg-danger'">
+                  {{ item.estValide ? 'Valid' : 'Invalid' }}
+                </span>
+              </td>
+              <td>{{ item.idChambre }}</td>
+              <td>{{ item.idEtudiant }}</td>
+            </tr>
+            <tr *ngIf="reservations.length === 0">
+              <td colspan="7" class="text-center text-muted py-3">No reservations found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Reservation Modal -->
+  <div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">New Reservation</h5>
+          <button type="button" class="btn-close" (click)="closeForm()"></button>
+        </div>
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="modal-body">
+            <div *ngIf="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
+            <div class="mb-3">
+              <label class="form-label">Chambre Number</label>
+              <input type="number" class="form-control" formControlName="numChambre" placeholder="e.g. 101">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Student CIN</label>
+              <input type="number" class="form-control" formControlName="cin" placeholder="e.g. 12345678">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="form.invalid">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" *ngIf="showModal"></div>
+</div>

@@ -1,0 +1,155 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Blocs</h2>
+    <button class="btn btn-primary" (click)="openForm()">
+      <i class="bi bi-plus-circle"></i> Add Bloc
+    </button>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Capacity</th>
+              <th>Chambres</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of blocs">
+              <td>{{ item.idBloc }}</td>
+              <td>{{ item.nomBloc }}</td>
+              <td><span class="badge bg-info">{{ item.capaciteBloc }}</span></td>
+              <td>
+                <ng-container *ngIf="item.chambres && item.chambres.length > 0">
+                  <span class="badge bg-success me-1">
+                    <i class="bi bi-door-closed"></i> {{ item.chambres.length }} chambres
+                  </span>
+                  <button class="btn btn-sm btn-outline-info" (click)="openViewChambres(item)" title="View Chambres">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </ng-container>
+                <span *ngIf="!item.chambres || item.chambres.length === 0" class="text-muted">
+                  <i class="bi bi-dash-circle"></i> No chambres
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary me-1" (click)="edit(item)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-success me-1" (click)="openAssign(item.nomBloc)">
+                  <i class="bi bi-link-45deg"></i> Assign
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="delete(item.idBloc!)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editMode ? 'Edit' : 'Add' }} Bloc</h5>
+          <button type="button" class="btn-close" (click)="closeForm()"></button>
+        </div>
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Name</label>
+              <input type="text" class="form-control" formControlName="nomBloc">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Capacity</label>
+              <input type="number" class="form-control" formControlName="capaciteBloc">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="form.invalid">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" *ngIf="showModal"></div>
+
+  <!-- Assign Chambres Modal -->
+  <div class="modal fade" [class.show]="showAssignModal" [style.display]="showAssignModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Assign Chambres to "{{ assignNomBloc }}"</h5>
+          <button type="button" class="btn-close" (click)="closeAssign()"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">Chambre IDs (comma-separated)</label>
+          <input type="text" class="form-control" [(ngModel)]="assignChambreIds" placeholder="e.g. 1, 2, 3">
+          <small class="text-muted">Enter the IDs of the chambres to assign to this bloc.</small>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeAssign()">Cancel</button>
+          <button type="button" class="btn btn-success" (click)="confirmAssign()">Assign</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" *ngIf="showAssignModal"></div>
+
+  <!-- View Chambres Modal -->
+  <div class="modal fade" [class.show]="showViewChambresModal" [style.display]="showViewChambresModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title">
+            <i class="bi bi-door-closed"></i> Chambres in "{{ viewingBloc?.nomBloc }}"
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeViewChambres()"></button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="viewingBloc && viewingBloc.chambres && viewingBloc.chambres.length > 0" class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Number</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let chambre of viewingBloc.chambres">
+                  <td>{{ chambre.idChambre }}</td>
+                  <td>{{ chambre.numeroChambre }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': chambre.typeC === 'SIMPLE',
+                      'bg-warning': chambre.typeC === 'DOUBLE',
+                      'bg-danger': chambre.typeC === 'TRIPLE'
+                    }">{{ chambre.typeC }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div *ngIf="!viewingBloc || !viewingBloc.chambres || viewingBloc.chambres.length === 0" class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No chambres assigned to this bloc yet.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeViewChambres()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" *ngIf="showViewChambresModal"></div>
+</div>

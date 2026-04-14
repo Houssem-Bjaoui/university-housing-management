@@ -1,0 +1,109 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Universities</h2>
+    <button class="btn btn-primary" (click)="openForm()">
+      <i class="bi bi-plus-circle"></i> Add University
+    </button>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Address</th>
+              <th>Foyer</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of universites">
+              <td>{{ item.idUniversite }}</td>
+              <td>{{ item.nomUniversite }}</td>
+              <td>{{ item.adresse }}</td>
+              <td>
+                <span *ngIf="item.foyer" class="badge bg-success">
+                  <i class="bi bi-house-door"></i> {{ item.foyer.nomFoyer }}
+                </span>
+                <span *ngIf="!item.foyer" class="text-muted">
+                  <i class="bi bi-dash-circle"></i> No foyer
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary me-1" (click)="edit(item)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-success me-1" (click)="openAssignFoyer(item)">
+                  <i class="bi bi-link-45deg"></i> Assign Foyer
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="delete(item.idUniversite!)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editMode ? 'Edit' : 'Add' }} University</h5>
+          <button type="button" class="btn-close" (click)="closeForm()"></button>
+        </div>
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Name</label>
+              <input type="text" class="form-control" formControlName="nomUniversite">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Address</label>
+              <input type="text" class="form-control" formControlName="adresse">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="form.invalid">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="showModal" *ngIf="showModal"></div>
+
+  <!-- Assign Foyer Modal -->
+  <div class="modal fade" [class.show]="showAssignModal" [style.display]="showAssignModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Assign Foyer to University</h5>
+          <button type="button" class="btn-close" (click)="closeAssignModal()"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">Select Foyer</label>
+          <select class="form-select" [(ngModel)]="assignFoyerId">
+            <option [value]="0">-- Select a Foyer --</option>
+            <option *ngFor="let foyer of availableFoyers" [value]="foyer.idFoyer">
+              {{ foyer.nomFoyer }} (Capacity: {{ foyer.capaciteFoyer }})
+            </option>
+          </select>
+          <small class="text-muted d-block mt-2">
+            <i class="bi bi-info-circle"></i> Only showing unassigned foyers
+          </small>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeAssignModal()">Cancel</button>
+          <button type="button" class="btn btn-success" (click)="confirmAssignFoyer()">Assign</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" *ngIf="showAssignModal"></div>
+</div>

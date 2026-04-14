@@ -1,0 +1,100 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Chambres</h2>
+    <button class="btn btn-primary" (click)="openForm()">
+      <i class="bi bi-plus-circle"></i> Add Chambre
+    </button>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <label class="form-label">Filter by Bloc</label>
+          <select class="form-select" [(ngModel)]="selectedBloc" (change)="filterByBloc()">
+            <option value="">All Blocs</option>
+            <option *ngFor="let bloc of blocs" [value]="bloc.nomBloc">{{ bloc.nomBloc }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Number</th>
+              <th>Type</th>
+              <th>Assigned Bloc</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of chambres">
+              <td>{{ item.idChambre }}</td>
+              <td>{{ item.numeroChambre }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-success': item.typeC === 'SIMPLE',
+                  'bg-warning': item.typeC === 'DOUBLE',
+                  'bg-danger': item.typeC === 'TRIPLE'
+                }">{{ item.typeC }}</span>
+              </td>
+              <td>
+                <span *ngIf="item.nomBloc" class="badge bg-info">
+                  <i class="bi bi-grid-3x3"></i> {{ item.nomBloc }}
+                </span>
+                <span *ngIf="!item.nomBloc" class="text-muted">
+                  <i class="bi bi-dash-circle"></i> Not assigned
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary me-2" (click)="edit(item)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="delete(item.idChambre!)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editMode ? 'Edit' : 'Add' }} Chambre</h5>
+          <button type="button" class="btn-close" (click)="closeForm()"></button>
+        </div>
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Number</label>
+              <input type="number" class="form-control" formControlName="numeroChambre">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Type</label>
+              <select class="form-select" formControlName="typeC">
+                <option value="">Select Type</option>
+                <option *ngFor="let type of typeChambreOptions" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="form.invalid">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="showModal" *ngIf="showModal"></div>
+</div>
