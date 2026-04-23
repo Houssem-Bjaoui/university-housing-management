@@ -19,6 +19,9 @@ import { ChambreListComponent } from './features/chambre/chambre-list/chambre-li
 import { EtudiantListComponent } from './features/etudiant/etudiant-list/etudiant-list.component';
 import { ReservationListComponent } from './features/reservation/reservation-list/reservation-list.component';
 
+// Standalone Components
+import { ChatWidgetComponent } from './shared/components/chat-widget/chat-widget.component';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -37,7 +40,8 @@ import { ReservationListComponent } from './features/reservation/reservation-lis
     AppRoutingModule,
     HttpClientModule,
     ReactiveFormsModule,
-    FormsModule
+    FormsModule,
+    ChatWidgetComponent
   ],
   providers: [],
   bootstrap: [AppComponent]
